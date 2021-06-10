@@ -48,6 +48,7 @@ def print_help_and_exit():
     print("      -SB <N>   limit size in pixels to value (pixels will be cut)")
     print("      -fh       fixed height")
     print("      -fw       fixed width")
+    print("      -fa       width as determined by advance in ttf font (uses more space in bitmap)")
     print("      -g <S> <E> add chars group to the font")
     print("                where <S> - first char hex or binary code, or char symbol")
     print("                      <E> - chars count minus 1 (integer), or char symbol")
@@ -73,6 +74,7 @@ fold = False
 flimit_bottom = 0
 fwidth = False
 fheight = False
+fontadvance = False
 fname = ""
 fgroups = []
 TTF = False
@@ -104,6 +106,8 @@ while idx < len(sys.argv):
         fheight = True
     elif opt == "-fw":
         fwidth = True
+    elif opt == "-fa":
+        fontadvance = True
     elif opt == "-f":
         idx += 1
         if sys.argv[idx] == "old":
@@ -148,7 +152,7 @@ while idx < len(sys.argv):
 
 if TTF:
     from modules import ttfsource
-    source = ttfsource.TTFSource(fname, fsize)
+    source = ttfsource.TTFSource(fname, fsize, fontadvance)
     if len(fgroups) == 0:
         fgroups.append((' ', unichr(127)))
     for g in fgroups:

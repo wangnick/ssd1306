@@ -39,11 +39,12 @@ class TTFSource(fontcontainer.FontContainer):
 
     # filename - name of TTF font file (full path is supported)
     # size - size of font (not pixels)
-    def __init__(self, filename, size):
+    def __init__(self, filename, size, fontadvance = False):
         fontname = os.path.basename(os.path.splitext(filename)[0])
         fontcontainer.FontContainer.__init__(self, fontname, size)
         self.face = freetype.Face( filename )
         self.face.set_char_size( width=0, height=(size << 6), hres=96, vres=96 )
+        self.fontadvance = fontadvance
 
     def add_chars(self, first, last):
         index = self.add_group()
@@ -60,19 +61,27 @@ class TTFSource(fontcontainer.FontContainer):
     def __add_char(self, group_index, ch):
         self.face.load_char(ch, freetype.FT_LOAD_MONOCHROME | freetype.FT_LOAD_RENDER )
         bitmap = self.face.glyph.bitmap
-        print(bitmap.buffer)
+        width = bitmap.width
         bitmap_data = []
         for y in range( bitmap.rows ):
             bitmap_data.append( [] )
-            for x in range( bitmap.width ):
+            for x in range( width ):
                 b_index = y * bitmap.pitch + int(x / 8)
                 bit = 7 - int(x % 8)
                 bit_data = (bitmap.buffer[ b_index ] >> bit) & 1
                 bitmap_data[y].append( bit_data )
+        if self.fontadvance:
+            width = int(self.face.glyph.advance.x/64+0.5)-1
+            before = self.face.glyph.bitmap_left
+            after = width-bitmap.width-before
+            for d in bitmap_data:
+                for n in range(before):
+                    d.insert(0, 0)
+                d += [0]*after
         self.add_char(group_index, ch,\
                       source=bitmap.buffer,\
                       bitmap=bitmap_data,\
-                      width=bitmap.width,\
+                      width=width,\
                       height=bitmap.rows,\
                       left=self.face.glyph.bitmap_left,\
                       top=self.face.glyph.bitmap_top)
